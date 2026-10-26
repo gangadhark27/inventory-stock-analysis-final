@@ -65,5 +65,15 @@ def create_app(config_class=Config):
     # Safe database auto-initialization (ensures tables exist without overwriting records)
     with app.app_context():
         db.create_all()
+        # On Vercel serverless instances, auto-seed demo data if database is empty
+        import os
+        if os.environ.get("VERCEL"):
+            try:
+                from app.models.user import User
+                if User.query.count() == 0:
+                    from app.seed import seed_database
+                    seed_database(reset_first=False)
+            except Exception:
+                pass
 
     return app

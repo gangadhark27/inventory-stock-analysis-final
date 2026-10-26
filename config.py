@@ -8,9 +8,12 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-secret-key-change-in-prod-8f92b7c6")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Instance directory for database
-    INSTANCE_DIR = BASE_DIR / "instance"
-    INSTANCE_DIR.mkdir(exist_ok=True)
+    # Instance directory for database (Vercel uses /tmp for ephemeral storage)
+    if os.environ.get("VERCEL"):
+        INSTANCE_DIR = Path("/tmp")
+    else:
+        INSTANCE_DIR = BASE_DIR / "instance"
+        INSTANCE_DIR.mkdir(exist_ok=True)
     
     _raw_db_url = os.environ.get("DATABASE_URL")
     if _raw_db_url and _raw_db_url.startswith("postgres://"):
