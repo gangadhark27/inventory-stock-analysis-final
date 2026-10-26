@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — StockPulse System{% endblock %}
+
+{% block auth_content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow border-0 rounded-4 overflow-hidden">
+            <div class="card-header bg-dark text-white p-4 text-center">
+                <div class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-25 text-primary mb-2">
+                    <i class="bi bi-box-seam-fill fs-2 text-info"></i>
+                </div>
+                <h4 class="fw-bold mb-1">StockPulse</h4>
+                <p class="text-white-50 small mb-0">Inventory & Stock Analysis Management</p>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label class="form-label" for="username">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                            {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), placeholder="Enter username", id="usernameInput", autofocus=true) }}
+                        </div>
+                        {% for error in form.username.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="password">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+                            {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="Enter password", id="passwordInput") }}
+                        </div>
+                        {% for error in form.password.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        {{ form.remember(class="form-check-input", id="rememberCheck") }}
+                        <label class="form-check-label small text-muted" for="rememberCheck">Remember me on this browser</label>
+                    </div>
+
+                    <div class="d-grid gap-2 mb-3">
+                        {{ form.submit(class="btn btn-primary py-2 fw-semibold") }}
+                    </div>
+                </form>
+
+                <!-- College Demo Helper -->
+                <div class="p-3 bg-light rounded-3 border mt-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="badge bg-secondary">Demo Accounts</span>
+                        <span class="text-muted small">1-Click Fill:</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-dark flex-fill" onclick="fillDemo('admin', 'Admin123!')">
+                            <i class="bi bi-shield-lock me-1"></i> Admin
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" onclick="fillDemo('staff', 'Staff123!')">
+                            <i class="bi bi-person me-1"></i> Staff
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-light text-center py-3 text-muted small border-top">
+                Enterprise Inventory Tracking & Predictive Analytics
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fillDemo(user, pass) {
+    document.getElementById('usernameInput').value = user;
+    document.getElementById('passwordInput').value = pass;
+}
+</script>
+{% endblock %}

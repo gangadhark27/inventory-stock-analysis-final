@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} ({{ product.sku }}) — StockPulse{% endblock %}
+
+{% block content %}
+<!-- Product Header -->
+<div class="page-header">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-{{ product.status_badge_class }} fs-6">{{ product.stock_status }}</span>
+            <code class="fs-5 fw-bold text-primary">{{ product.sku }}</code>
+            {% if not product.is_active %}
+                <span class="badge bg-danger">Deactivated</span>
+            {% endif %}
+        </div>
+        <h1 class="page-title">{{ product.name }}</h1>
+        <div class="page-subtitle">
+            Category: <strong>{{ product.category.name if product.category else 'N/A' }}</strong>
+            {% if product.supplier %}
+                &bull; Supplier: <strong>{{ product.supplier.name }}</strong>
+            {% endif %}
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('inventory.stock_in', product_id=product.id) }}" class="btn btn-success">
+            <i class="bi bi-arrow-down-left me-1"></i> Stock In
+        </a>
+        <a href="{{ url_for('inventory.stock_out', product_id=product.id) }}" class="btn btn-danger">
+            <i class="bi bi-arrow-up-right me-1"></i> Stock Out
+        </a>
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('inventory.stock_adjust', product_id=product.id) }}" class="btn btn-outline-warning text-dark">
+            <i class="bi bi-sliders me-1"></i> Adjust
+        </a>
+        <a href="{{ url_for('inventory.edit_product', product_id=product.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil-square me-1"></i> Edit
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Key Product Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="kpi-card text-center">
+            <div class="kpi-title mb-2">Current Quantity</div>
+            <div class="kpi-value {% if product.quantity == 0 %}text-danger{% elif product.quantity <= product.reorder_level %}text-warning{% else %}text-dark{% endif %}">
+                {{ product.quantity }}
+            </div>
+            <div class="kpi-subtext">Units in warehouse</div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <div class="kpi-card text-center">
+            <div class="kpi-title mb-2">Reorder Threshold</div>
+            <div class="kpi-value text-secondary">{{ product.reorder_level }}</div>
+            <div class="kpi-subtext">Minimum target level</div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <div class="kpi-card text-center">
+            <div class="kpi-title mb-2">Unit Cost / Price</div>
+            <div class="kpi-value fs-4 text-primary">
+                {{ product.unit_cost|currency }}
+            </div>
+            <div class="kpi-subtext">Selling: {{ product.selling_price|currency }}</div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <div class="kpi-card text-center">
+            <div class="kpi-title mb-2">Total Cost Value</div>
+            <div class="kpi-value fs-4 text-success">
+                {{ product.inventory_cost_value|currency }}
+            </div>
+            <div class="kpi-subtext">Potential Retail: {{ product.potential_selling_value|currency }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Details & Specifications -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="dashboard-card h-100 mb-0">
+            <div class="card-header">
+                <i class="bi bi-info-circle text-primary me-2"></i> Product Information & Overview
+            </div>
+            <div class="card-body">
+                <p class="text-secondary mb-3">{{ product.description or 'No detailed description specified for this SKU.' }}</p>
+                <div class="row g-2 border-top pt-3 small">
+                    <div class="col-sm-6">
+                        <span class="text-muted">Record Created:</span>
+                        <span class="fw-semibold">{{ product.created_at|datetime_format }}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted">Last Updated:</span>
+                        <span class="fw-semibold">{{ product.updated_at|datetime_format }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="dashboard-card h-100 mb-0">
+            <div class="card-header">
+                <i class="bi bi-truck text-primary me-2"></i> Supplier Information
+            </div>
+            <div class="card-body">
+                {% if product.supplier %}
+                    <h6 class="fw-bold mb-1">{{ product.supplier.name }}</h6>
+                    <div class="small text-muted mb-2"><i class="bi bi-person me-1"></i>Contact: {{ product.supplier.contact_person or 'N/A' }}</div>
+                    <div class="small text-muted mb-2"><i class="bi bi-telephone me-1"></i>{{ product.supplier.phone or 'N/A' }}</div>
+                    <div class="small text-muted"><i class="bi bi-envelope me-1"></i>{{ product.supplier.email or 'N/A' }}</div>
+                {% else %}
+                    <p class="text-muted small mb-0">No primary supplier linked to this product.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Transaction History for this product -->
+<div class="dashboard-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi bi-clock-history text-primary me-2"></i>
+            <span>Transaction Ledger for {{ product.sku }}</span>
+        </div>
+        <span class="badge bg-secondary-subtle text-secondary">{{ transactions|length }} recent entries</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Tx ID</th>
+                    <th>Date & Time</th>
+                    <th>Type</th>
+                    <th>Qty Changed</th>
+                    <th>Previous Qty</th>
+                    <th>Resulting Qty</th>
+                    <th>Responsible User</th>
+                    <th>Reference</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions %}
+                <tr>
+                    <td class="text-muted small">#{{ tx.id }}</td>
+                    <td class="text-muted small">{{ tx.created_at|datetime_format }}</td>
+                    <td>
+                        <span class="badge bg-{{ tx.type_badge_class }}">
+                            {{ tx.transaction_type.replace('_', ' ') }}
+                        </span>
+                    </td>
+                    <td class="fw-bold {% if tx.transaction_type == 'STOCK_IN' %}text-success{% elif tx.transaction_type == 'STOCK_OUT' %}text-danger{% else %}text-primary{% endif %}">
+                        {% if tx.transaction_type == 'STOCK_IN' %}+{% elif tx.transaction_type == 'STOCK_OUT' %}-{% endif %}{{ tx.quantity }}
+                    </td>
+                    <td class="text-muted">{{ tx.previous_quantity }}</td>
+                    <td class="fw-semibold">{{ tx.resulting_quantity }}</td>
+                    <td class="small">{{ tx.user.full_name }}</td>
+                    <td class="small text-muted">{{ tx.reference or '—' }}</td>
+                    <td class="small text-muted text-truncate" style="max-width: 250px;">{{ tx.notes or '—' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">
+                        No transactions recorded for this product yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

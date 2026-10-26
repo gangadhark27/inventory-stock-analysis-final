@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} — StockPulse{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 class="page-title">{{ title }}</h2>
+            <a href="{{ url_for('inventory.suppliers') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Suppliers
+            </a>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label class="form-label" for="name">Supplier / Business Name <span class="text-danger">*</span></label>
+                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="e.g. Apex Global Logistics") }}
+                        {% for error in form.name.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="contact_person">Contact Representative</label>
+                            {{ form.contact_person(class="form-control", placeholder="e.g. Marcus Vance") }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="phone">Phone Number</label>
+                            {{ form.phone(class="form-control", placeholder="+1 (555) 000-0000") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="email">Email Address</label>
+                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="sales@vendor.com") }}
+                        {% for error in form.email.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label" for="address">Physical / Warehouse Address</label>
+                        {{ form.address(class="form-control", rows="2", placeholder="Street, City, State, ZIP...") }}
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <a href="{{ url_for('inventory.suppliers') }}" class="btn btn-light border">Cancel</a>
+                        {{ form.submit(class="btn btn-primary px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

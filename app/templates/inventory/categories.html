@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Category Management — StockPulse{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-tags-fill text-primary me-2"></i>Product Categories</h1>
+        <div class="page-subtitle">Organize inventory into structured classification taxonomies and department groups.</div>
+    </div>
+    {% if current_user.is_admin %}
+    <div>
+        <a href="{{ url_for('inventory.new_category') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Add Category
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="dashboard-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">All Categories ({{ categories|length }})</span>
+        <a href="{{ url_for('reports.export_categories') }}" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Export PDF
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 90px;">S.No (ID)</th>
+                    <th>Category Name</th>
+                    <th>Description</th>
+                    <th>Active Products</th>
+                    {% if current_user.is_admin %}<th class="text-end">Actions</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in categories %}
+                <tr>
+                    <td class="fw-bold text-primary">#{{ c.id }}</td>
+                    <td>
+                        <a href="{{ url_for('inventory.products', category_id=c.id) }}" class="fw-bold text-decoration-none">
+                            {{ c.name }}
+                        </a>
+                    </td>
+                    <td class="text-secondary small">{{ c.description or '—' }}</td>
+                    <td>
+                        <a href="{{ url_for('inventory.products', category_id=c.id) }}" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none">
+                            {{ c.product_count }} products
+                        </a>
+                    </td>
+                    {% if current_user.is_admin %}
+                    <td class="text-end">
+                        <div class="d-inline-flex gap-1">
+                            <a href="{{ url_for('inventory.edit_category', category_id=c.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            {% if c.product_count == 0 %}
+                            <form method="POST" action="{{ url_for('inventory.delete_category', category_id=c.id) }}" onsubmit="return confirm('Are you sure you want to delete category \'{{ c.name }}\'?');" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Category">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">No categories created yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

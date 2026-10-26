@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Product Catalog — StockPulse{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-boxes text-primary me-2"></i>Product Catalog</h1>
+        <div class="page-subtitle">Manage master SKU records, monitor real-time stock levels, and review unit economics.</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('reports.export_inventory', category_id=selected_category) }}" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Export PDF
+        </a>
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('inventory.new_product') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Add Product
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Search & Filter Card -->
+<div class="filter-card">
+    <form method="GET" class="row g-2 align-items-center">
+        <!-- Search -->
+        <div class="col-lg-4 col-md-6">
+            <div class="input-group">
+                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                <input type="text" name="search" class="form-control" placeholder="Search by SKU, Product Name..." value="{{ search }}">
+            </div>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="col-lg-3 col-md-6">
+            <select name="category_id" class="form-select">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Stock Status Filter -->
+        <div class="col-lg-3 col-md-6">
+            <select name="status" class="form-select">
+                <option value="">All Stock Statuses</option>
+                <option value="in_stock" {% if selected_status == 'in_stock' %}selected{% endif %}>In Stock (Healthy)</option>
+                <option value="low_stock" {% if selected_status == 'low_stock' %}selected{% endif %}>Low Stock (At/Below Reorder)</option>
+                <option value="out_of_stock" {% if selected_status == 'out_of_stock' %}selected{% endif %}>Out of Stock (Zero Units)</option>
+                <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive SKUs</option>
+            </select>
+        </div>
+
+        <!-- Submit & Reset Buttons -->
+        <div class="col-lg-2 col-md-6 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill">Filter</button>
+            {% if search or selected_category or selected_status %}
+                <a href="{{ url_for('inventory.products') }}" class="btn btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Product Table Card -->
+<div class="dashboard-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Product Records ({{ pagination.total }})</span>
+        <div class="text-muted small">
+            Showing {{ pagination.items|length }} of {{ pagination.total }} items
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>In Stock</th>
+                    <th>Reorder Lvl</th>
+                    <th>Status</th>
+                    <th>Unit Cost</th>
+                    <th>Selling Price</th>
+                    <th>Cost Value</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr class="{% if not p.is_active %}opacity-75 bg-light{% endif %}">
+                    <td>
+                        <a href="{{ url_for('inventory.product_detail', product_id=p.id) }}" class="fw-bold text-decoration-none">
+                            <code>{{ p.sku }}</code>
+                        </a>
+                    </td>
+                    <td>
+                        <div class="fw-semibold">{{ p.name }}</div>
+                        {% if p.supplier %}
+                            <div class="text-muted small"><i class="bi bi-truck me-1"></i>{{ p.supplier.name }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">{{ p.category.name if p.category else 'N/A' }}</span>
+                    </td>
+                    <td>
+                        <span class="fw-bold fs-6 {% if p.quantity == 0 %}text-danger{% elif p.quantity <= p.reorder_level %}text-warning{% else %}text-dark{% endif %}">
+                            {{ p.quantity }}
+                        </span>
+                    </td>
+                    <td class="text-muted">{{ p.reorder_level }}</td>
+                    <td>
+                        <span class="badge bg-{{ p.status_badge_class }}">{{ p.stock_status }}</span>
+                    </td>
+                    <td>{{ p.unit_cost|currency }}</td>
+                    <td>{{ p.selling_price|currency }}</td>
+                    <td class="fw-semibold text-secondary">{{ p.inventory_cost_value|currency }}</td>
+                    <td class="text-end">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light border" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('inventory.product_detail', product_id=p.id) }}">
+                                        <i class="bi bi-eye text-primary me-2"></i> View Details & History
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('inventory.stock_in', product_id=p.id) }}">
+                                        <i class="bi bi-arrow-down-left text-success me-2"></i> Receive Stock-In
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('inventory.stock_out', product_id=p.id) }}">
+                                        <i class="bi bi-arrow-up-right text-danger me-2"></i> Issue Stock-Out
+                                    </a>
+                                </li>
+                                {% if current_user.is_admin %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('inventory.edit_product', product_id=p.id) }}">
+                                        <i class="bi bi-pencil-square me-2"></i> Edit Product
+                                    </a>
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('inventory.toggle_product_status', product_id=p.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="dropdown-item {% if p.is_active %}text-danger{% else %}text-success{% endif %}">
+                                            <i class="bi {% if p.is_active %}bi-slash-circle text-danger{% else %}bi-check-circle text-success{% endif %} me-2"></i>
+                                            {% if p.is_active %}Deactivate Product{% else %}Activate Product{% endif %}
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                        No products match your search or filter criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+        <div class="text-muted small">
+            Page {{ pagination.page }} of {{ pagination.pages }}
+        </div>
+        <nav aria-label="Product pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('inventory.products', page=pagination.prev_num, search=search, category_id=selected_category, status=selected_status) }}">Previous</a>
+                </li>
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('inventory.products', page=p, search=search, category_id=selected_category, status=selected_status) }}">{{ p }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('inventory.products', page=pagination.next_num, search=search, category_id=selected_category, status=selected_status) }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

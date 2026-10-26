@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Analytics & Intelligence — StockPulse{% endblock %}
+
+{% block content %}
+<!-- Page Header with Date Filter -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Inventory Analytics & Intelligence</h1>
+        <div class="page-subtitle">Quantitative data analytics powered by Pandas, turnover analysis, and predictive reorder modeling.</div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <form method="GET" class="d-flex align-items-center gap-2">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('analytics.index', period='7d') }}" class="btn btn-sm btn-outline-secondary {% if period == '7d' %}active{% endif %}">7D</a>
+                <a href="{{ url_for('analytics.index', period='30d') }}" class="btn btn-sm btn-outline-secondary {% if period == '30d' %}active{% endif %}">30D</a>
+                <a href="{{ url_for('analytics.index', period='90d') }}" class="btn btn-sm btn-outline-secondary {% if period == '90d' %}active{% endif %}">90D</a>
+                <a href="{{ url_for('analytics.index', period='all') }}" class="btn btn-sm btn-outline-secondary {% if period == 'all' %}active{% endif %}">All</a>
+            </div>
+            <a href="{{ url_for('reports.export_reorder') }}" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-file-earmark-pdf-fill me-1"></i> Reorder Plan PDF
+            </a>
+        </form>
+    </div>
+</div>
+
+<!-- Valuation Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-title mb-2">Total Inventory Cost Basis</div>
+            <div class="kpi-value text-primary">{{ overview.total_cost_value|currency }}</div>
+            <div class="kpi-subtext">Sum of (Quantity &times; Unit Cost)</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-title mb-2">Potential Retail Valuation</div>
+            <div class="kpi-value text-success">{{ overview.total_selling_value|currency }}</div>
+            <div class="kpi-subtext">Sum of (Quantity &times; Selling Price)</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-title mb-2">Potential Gross Margin</div>
+            {% set margin = overview.total_selling_value - overview.total_cost_value %}
+            <div class="kpi-value text-dark">{{ margin|currency }}</div>
+            <div class="kpi-subtext">
+                {% if overview.total_selling_value > 0 %}
+                    {{ ((margin / overview.total_selling_value) * 100)|round(1) }}% unrealized margin
+                {% else %}
+                    0.0%
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-title mb-2">Stock Health Ratio</div>
+            <div class="kpi-value text-info">
+                {% if overview.total_products > 0 %}
+                    {{ ((overview.healthy_stock_count / overview.total_products) * 100)|round(1) }}%
+                {% else %}
+                    0.0%
+                {% endif %}
+            </div>
+            <div class="kpi-subtext">{{ overview.healthy_stock_count }} healthy of {{ overview.total_products }} active SKUs</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row: Net Daily Flow & Category Cost Breakdown -->
+<div class="row g-3 mb-4">
+    <!-- Daily Inbound vs Outbound Bar Chart -->
+    <div class="col-lg-7">
+        <div class="dashboard-card h-100 mb-0">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-bar-chart-fill text-primary me-2"></i>
+                    <span>Daily Inventory Throughput Flow (Units)</span>
+                </div>
+                <span class="badge bg-light text-dark border">
+                    {{ movement_data.total_in }} In / {{ movement_data.total_out }} Out
+                </span>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px; position: relative;">
+                    <canvas id="analyticsFlowChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Cost Valuation Chart -->
+    <div class="col-lg-5">
+        <div class="dashboard-card h-100 mb-0">
+            <div class="card-header">
+                <i class="bi bi-currency-dollar text-success me-2"></i>
+                <span>Inventory Capital Allocation by Category</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px; position: relative;">
+                    <canvas id="categoryValueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Performance Table -->
+<div class="dashboard-card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-folder2-open text-primary me-2"></i>Category Breakdown & Portfolio Allocation</span>
+        <a href="{{ url_for('reports.export_categories') }}" class="btn btn-sm btn-outline-danger"><i class="bi bi-file-earmark-pdf-fill me-1"></i> Export PDF</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Category Name</th>
+                    <th>Active Products</th>
+                    <th>Total Units</th>
+                    <th>Capital Invested (Cost Value)</th>
+                    <th>Portfolio Share (%)</th>
+                    <th>Allocation Bar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in category_data.categories %}
+                <tr>
+                    <td class="fw-semibold">
+                        <a href="{{ url_for('inventory.products', category_id=c.id) }}" class="text-decoration-none">
+                            {{ c.name }}
+                        </a>
+                    </td>
+                    <td>{{ c.product_count }}</td>
+                    <td>{{ "{:,}".format(c.total_quantity) }} units</td>
+                    <td class="fw-semibold">{{ c.cost_value|currency }}</td>
+                    <td class="fw-bold text-primary">{{ c.value_percentage }}%</td>
+                    <td style="width: 200px;">
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ c.value_percentage }}%;" aria-valuenow="{{ c.value_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Velocity Rankings: Fast vs Slow Moving Products -->
+<div class="row g-3 mb-4">
+    <!-- Fast Moving -->
+    <div class="col-lg-6">
+        <div class="dashboard-card h-100 mb-0">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-lightning-charge-fill text-warning me-2"></i>
+                    <span>Fast-Moving SKUs (Highest Demand in {{ period|upper }})</span>
+                </div>
+                <a href="{{ url_for('reports.export_fast_moving', period=period) }}" class="btn btn-sm btn-outline-danger"><i class="bi bi-file-earmark-pdf-fill me-1"></i> Export PDF</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>SKU & Product</th>
+                            <th>Units Out</th>
+                            <th>Orders</th>
+                            <th>Current Stock</th>
+                            <th>Velocity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in fast_movers %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('inventory.product_detail', product_id=item.product.id) }}" class="fw-semibold text-decoration-none">
+                                    {{ item.product.name }}
+                                </a>
+                                <div><code class="small text-muted">{{ item.product.sku }}</code></div>
+                            </td>
+                            <td class="fw-bold text-primary">{{ item.units_moved }}</td>
+                            <td class="text-muted">{{ item.tx_count }}</td>
+                            <td>
+                                <span class="badge bg-{{ item.product.status_badge_class }}">{{ item.product.quantity }} in stock</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success-subtle text-success">High Velocity</span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No outbound movements in this period.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slow Moving / Inactive -->
+    <div class="col-lg-6">
+        <div class="dashboard-card h-100 mb-0">
+            <div class="card-header">
+                <i class="bi bi-snow2 text-info me-2"></i>
+                <span>Slow-Moving / Low-Turnover Items ({{ period|upper }})</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>SKU & Product</th>
+                            <th>Units Out</th>
+                            <th>In Stock</th>
+                            <th>Capital Tied Up</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in slow_movers %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('inventory.product_detail', product_id=item.product.id) }}" class="fw-semibold text-decoration-none">
+                                    {{ item.product.name }}
+                                </a>
+                                <div><code class="small text-muted">{{ item.product.sku }}</code></div>
+                            </td>
+                            <td class="text-muted">{{ item.units_moved }}</td>
+                            <td>{{ item.product.quantity }}</td>
+                            <td class="text-muted">{{ item.product.inventory_cost_value|currency }}</td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-secondary">{{ item.status }}</span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No low turnover records found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reorder Recommendations with Transparent Formulas -->
+<div class="dashboard-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi bi-cart-check-fill text-success me-2"></i>
+            <span>Intelligent Stock Replenishment Recommendations</span>
+        </div>
+        <a href="{{ url_for('reports.export_reorder') }}" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Export Purchase Plan (PDF)
+        </a>
+    </div>
+    <div class="p-3 bg-light border-bottom small text-muted">
+        <i class="bi bi-info-circle-fill me-1 text-primary"></i>
+        <strong>Transparent Replenishment Methodology:</strong>
+        <code>Daily Velocity = 30-Day Sales / 30</code>.
+        Target Stock is computed using <code>Reorder Threshold + (Daily Velocity &times; (30 Target Cover Days + 7 Supplier Lead Days))</code>.
+        For items without sales history, fallback uses <code>2 &times; Reorder Level</code>. Suggested Order is <code>max(0, Target - Current Stock)</code>.
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Priority</th>
+                    <th>SKU & Product</th>
+                    <th>Current Stock</th>
+                    <th>Reorder Lvl</th>
+                    <th>Daily Velocity</th>
+                    <th>Target Stock</th>
+                    <th>Suggested Order</th>
+                    <th>Est. Cost</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reorders %}
+                <tr class="{% if r.priority == 'CRITICAL' %}table-danger{% elif r.priority == 'HIGH' %}table-warning{% endif %}">
+                    <td>
+                        <span class="badge bg-{{ r.priority_badge }}">{{ r.priority }}</span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('inventory.product_detail', product_id=r.product.id) }}" class="fw-semibold text-decoration-none">
+                            {{ r.product.name }}
+                        </a>
+                        <div><code class="small text-muted">{{ r.product.sku }}</code></div>
+                    </td>
+                    <td class="fw-bold {% if r.current_stock == 0 %}text-danger{% elif r.current_stock <= r.reorder_level %}text-warning{% endif %}">
+                        {{ r.current_stock }}
+                    </td>
+                    <td class="text-muted">{{ r.reorder_level }}</td>
+                    <td><code>{{ r.daily_velocity }} /day</code></td>
+                    <td>{{ r.target_stock }} units</td>
+                    <td>
+                        <strong class="{% if r.suggested_order > 0 %}text-primary fs-6{% else %}text-muted{% endif %}">
+                            {{ r.suggested_order }}
+                        </strong>
+                    </td>
+                    <td class="text-secondary fw-semibold">{{ r.estimated_cost|currency }}</td>
+                    <td class="text-end">
+                        {% if r.suggested_order > 0 %}
+                        <a href="{{ url_for('inventory.stock_in', product_id=r.product.id) }}" class="btn btn-sm btn-success">
+                            <i class="bi bi-plus-lg me-1"></i> Order / Receive
+                        </a>
+                        {% else %}
+                        <span class="text-muted small"><i class="bi bi-check-lg text-success me-1"></i>Stocked</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    window.analyticsMovementData = {{ movement_json|safe }};
+    window.analyticsCategoryData = {{ category_json|safe }};
+</script>
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+{% endblock %}

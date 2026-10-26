@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} — StockPulse{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 class="page-title">{{ title }}</h2>
+            <a href="{{ url_for('inventory.products') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Catalog
+            </a>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="sku">SKU / Code <span class="text-danger">*</span></label>
+                            {{ form.sku(class="form-control" + (" is-invalid" if form.sku.errors else ""), placeholder="e.g. EL-ARD-001") }}
+                            <div class="form-text small">Unique item identifier</div>
+                            {% for error in form.sku.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label" for="name">Product Name <span class="text-danger">*</span></label>
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="e.g. Arduino Uno R3") }}
+                            {% for error in form.name.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="description">Product Description</label>
+                        {{ form.description(class="form-control", rows="2", placeholder="Technical specifications, packaging notes, storage instructions...") }}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="category_id">Category <span class="text-danger">*</span></label>
+                            {{ form.category_id(class="form-select" + (" is-invalid" if form.category_id.errors else "")) }}
+                            {% for error in form.category_id.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="supplier_id">Primary Supplier</label>
+                            {{ form.supplier_id(class="form-select") }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="unit_cost">Unit Cost ($) <span class="text-danger">*</span></label>
+                            {{ form.unit_cost(class="form-control" + (" is-invalid" if form.unit_cost.errors else ""), step="0.01") }}
+                            <div class="form-text small">Purchase / procurement cost</div>
+                            {% for error in form.unit_cost.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="selling_price">Selling Price ($) <span class="text-danger">*</span></label>
+                            {{ form.selling_price(class="form-control" + (" is-invalid" if form.selling_price.errors else ""), step="0.01") }}
+                            <div class="form-text small">Retail or transfer price</div>
+                            {% for error in form.selling_price.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="reorder_level">Reorder Threshold <span class="text-danger">*</span></label>
+                            {{ form.reorder_level(class="form-control" + (" is-invalid" if form.reorder_level.errors else "")) }}
+                            <div class="form-text small">Minimum safety stock level</div>
+                            {% for error in form.reorder_level.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4 form-check form-switch">
+                        {{ form.is_active(class="form-check-input", id="activeSwitch") }}
+                        <label class="form-check-label fw-semibold" for="activeSwitch">Active Product (Available for stock movements)</label>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                        <a href="{{ url_for('inventory.products') }}" class="btn btn-light border">Cancel</a>
+                        {{ form.submit(class="btn btn-primary px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

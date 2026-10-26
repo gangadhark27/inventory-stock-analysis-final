@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}User Management — StockPulse{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-people-fill text-primary me-2"></i>User Management</h1>
+        <div class="page-subtitle">Configure system access credentials, role authorizations, and staff accounts.</div>
+    </div>
+    <div>
+        <a href="{{ url_for('auth.new_user') }}" class="btn btn-primary">
+            <i class="bi bi-person-plus-fill me-1"></i> Add New User
+        </a>
+    </div>
+</div>
+
+<div class="dashboard-card">
+    <div class="card-header">
+        <span class="fw-semibold">Registered System Users ({{ users|length }})</span>
+        <span class="badge bg-secondary-subtle text-secondary">Role-Based Access Control</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Account Status</th>
+                    <th>Created Date</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="text-muted fw-semibold">#{{ u.id }}</td>
+                    <td>
+                        <div class="fw-semibold">{{ u.full_name }}</div>
+                    </td>
+                    <td><code>{{ u.username }}</code></td>
+                    <td>
+                        {% if u.role == 'Admin' %}
+                            <span class="badge bg-primary"><i class="bi bi-shield-fill-check me-1"></i> Administrator</span>
+                        {% else %}
+                            <span class="badge bg-secondary"><i class="bi bi-person-badge me-1"></i> Staff</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.is_active %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                <i class="bi bi-check-circle-fill me-1"></i> Active
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                <i class="bi bi-x-circle-fill me-1"></i> Inactive / Suspended
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted">{{ u.created_at|datetime_format }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('auth.edit_user', user_id=u.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil-square me-1"></i> Edit
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        No user accounts found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

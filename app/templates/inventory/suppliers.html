@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Supplier Management — StockPulse{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-truck text-primary me-2"></i>Suppliers & Vendors</h1>
+        <div class="page-subtitle">Track wholesale suppliers, contact personnel, and procurement communication channels.</div>
+    </div>
+    <div>
+        <a href="{{ url_for('inventory.new_supplier') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Add Supplier
+        </a>
+    </div>
+</div>
+
+<div class="dashboard-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Registered Suppliers ({{ suppliers|length }})</span>
+        <a href="{{ url_for('reports.export_suppliers') }}" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Export PDF
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 100px;">S.No (ID)</th>
+                    <th>Vendor Name</th>
+                    <th>Contact Person</th>
+                    <th>Phone</th>
+                    <th>Email Address</th>
+                    <th>Address</th>
+                    <th>Products Supplied</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in suppliers %}
+                <tr>
+                    <td class="fw-bold text-primary">#{{ s.id }}</td>
+                    <td class="fw-bold">{{ s.name }}</td>
+                    <td>{{ s.contact_person or '—' }}</td>
+                    <td><code>{{ s.phone or '—' }}</code></td>
+                    <td>
+                        {% if s.email %}
+                            <a href="mailto:{{ s.email }}" class="text-decoration-none">{{ s.email }}</a>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted text-truncate" style="max-width: 200px;">{{ s.address or '—' }}</td>
+                    <td>
+                        <span class="badge bg-secondary-subtle text-secondary">{{ s.products.count() }} SKUs</span>
+                    </td>
+                    <td class="text-end">
+                        <div class="d-inline-flex gap-1">
+                            <a href="{{ url_for('inventory.edit_supplier', supplier_id=s.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('inventory.delete_supplier', supplier_id=s.id) }}" onsubmit="return confirm('Delete supplier \'{{ s.name }}\'? Linked products will be safely preserved.');" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Supplier">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">No suppliers registered yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

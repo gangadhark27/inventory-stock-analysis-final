@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Reporting & Document Exports — StockPulse{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-file-earmark-pdf-fill text-danger me-2"></i>Reporting & Document Exports</h1>
+        <div class="page-subtitle">Generate print-ready, professional PDF documents and auditable data extracts from live database records.</div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Report 1: Full Inventory Catalog -->
+    <div class="col-lg-4 col-md-6">
+        <div class="dashboard-card h-100 d-flex flex-column">
+            <div class="card-header bg-white">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-primary-subtle text-primary rounded">
+                        <i class="bi bi-boxes fs-5"></i>
+                    </div>
+                    <span class="fw-bold">Master Inventory Catalog</span>
+                </div>
+            </div>
+            <div class="card-body flex-grow-1">
+                <p class="text-secondary small">
+                    Complete listing of all active and inactive SKUs, category classifications, primary suppliers, on-hand balances, safety thresholds, and valuations.
+                </p>
+                <div class="badge bg-light text-dark border mb-3">
+                    {{ overview.total_products }} Products Catalogued
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top p-3 d-flex gap-2">
+                <a href="{{ url_for('reports.export_inventory') }}" class="btn btn-outline-danger flex-fill">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF
+                </a>
+                <a href="{{ url_for('reports.export_inventory', format='csv') }}" class="btn btn-sm btn-light border" title="Download CSV">
+                    <i class="bi bi-filetype-csv"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report 2: Low-Stock & Replenishment Alert -->
+    <div class="col-lg-4 col-md-6">
+        <div class="dashboard-card h-100 d-flex flex-column">
+            <div class="card-header bg-white">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-warning-subtle text-warning rounded">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    </div>
+                    <span class="fw-bold">Low & Out-of-Stock Alert</span>
+                </div>
+            </div>
+            <div class="card-body flex-grow-1">
+                <p class="text-secondary small">
+                    Targeted operational alert isolating all items currently at or below minimum reorder thresholds, with calculated replenishment deficits and procurement costs.
+                </p>
+                <div class="badge bg-warning-subtle text-warning border border-warning-subtle mb-3">
+                    {{ overview.low_stock_count + overview.out_of_stock_count }} Items Requiring Replenishment
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top p-3 d-flex gap-2">
+                <a href="{{ url_for('reports.export_low_stock') }}" class="btn btn-outline-danger flex-fill">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF
+                </a>
+                <a href="{{ url_for('reports.export_low_stock', format='csv') }}" class="btn btn-sm btn-light border" title="Download CSV">
+                    <i class="bi bi-filetype-csv"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report 3: Stock Movement Transaction Ledger -->
+    <div class="col-lg-4 col-md-6">
+        <div class="dashboard-card h-100 d-flex flex-column">
+            <div class="card-header bg-white">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-info-subtle text-info rounded">
+                        <i class="bi bi-clock-history fs-5"></i>
+                    </div>
+                    <span class="fw-bold">Stock Movement Audit Ledger</span>
+                </div>
+            </div>
+            <div class="card-body flex-grow-1">
+                <p class="text-secondary small">
+                    Historical record of every incoming receipt, outbound sales issue, and count adjustment. Includes timestamps, user IDs, reference numbers, and reason notes.
+                </p>
+                <div class="badge bg-light text-dark border mb-3">
+                    Full Compliance Audit Trail
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top p-3 d-flex gap-2">
+                <a href="{{ url_for('reports.export_transactions') }}" class="btn btn-outline-danger flex-fill">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF
+                </a>
+                <a href="{{ url_for('reports.export_transactions', format='csv') }}" class="btn btn-sm btn-light border" title="Download CSV">
+                    <i class="bi bi-filetype-csv"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report 4: Category Financial Breakdown -->
+    <div class="col-lg-4 col-md-6">
+        <div class="dashboard-card h-100 d-flex flex-column">
+            <div class="card-header bg-white">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-success-subtle text-success rounded">
+                        <i class="bi bi-pie-chart-fill fs-5"></i>
+                    </div>
+                    <span class="fw-bold">Category Financial Summary</span>
+                </div>
+            </div>
+            <div class="card-body flex-grow-1">
+                <p class="text-secondary small">
+                    Arranged by serial number: macro summary of SKU counts, physical unit holdings, total invested cost value, and portfolio percentage share across each category.
+                </p>
+                <div class="badge bg-success-subtle text-success border border-success-subtle mb-3">
+                    Capital Allocation Analysis
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top p-3 d-flex gap-2">
+                <a href="{{ url_for('reports.export_categories') }}" class="btn btn-outline-danger flex-fill">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF
+                </a>
+                <a href="{{ url_for('reports.export_categories', format='csv') }}" class="btn btn-sm btn-light border" title="Download CSV">
+                    <i class="bi bi-filetype-csv"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report 5: Reorder Purchase Plan -->
+    <div class="col-lg-4 col-md-6">
+        <div class="dashboard-card h-100 d-flex flex-column">
+            <div class="card-header bg-white">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-primary-subtle text-primary rounded">
+                        <i class="bi bi-cart-check-fill fs-5"></i>
+                    </div>
+                    <span class="fw-bold">Predictive Reorder Plan</span>
+                </div>
+            </div>
+            <div class="card-body flex-grow-1">
+                <p class="text-secondary small">
+                    Actionable procurement recommendations calculated from past 30-day velocity, lead time allowances, and current stock. Prioritized by replenishment criticality.
+                </p>
+                <div class="badge bg-primary-subtle text-primary border border-primary-subtle mb-3">
+                    Calculated Safety Buffers
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top p-3 d-flex gap-2">
+                <a href="{{ url_for('reports.export_reorder') }}" class="btn btn-outline-danger flex-fill">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF
+                </a>
+                <a href="{{ url_for('reports.export_reorder', format='csv') }}" class="btn btn-sm btn-light border" title="Download CSV">
+                    <i class="bi bi-filetype-csv"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report 6: Fast Moving Products -->
+    <div class="col-lg-4 col-md-6">
+        <div class="dashboard-card h-100 d-flex flex-column">
+            <div class="card-header bg-white">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 bg-warning-subtle text-warning rounded">
+                        <i class="bi bi-lightning-charge-fill fs-5"></i>
+                    </div>
+                    <span class="fw-bold">Fast-Moving Demand Report</span>
+                </div>
+            </div>
+            <div class="card-body flex-grow-1">
+                <p class="text-secondary small">
+                    Ranked demand analysis isolating top performing SKUs based on actual outgoing transaction quantities, issue frequency, and stock remaining.
+                </p>
+                <div class="badge bg-light text-dark border mb-3">
+                    Velocity Ranking
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top p-3 d-flex gap-2">
+                <a href="{{ url_for('reports.export_fast_moving') }}" class="btn btn-outline-danger flex-fill">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF
+                </a>
+                <a href="{{ url_for('reports.export_fast_moving', format='csv') }}" class="btn btn-sm btn-light border" title="Download CSV">
+                    <i class="bi bi-filetype-csv"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
